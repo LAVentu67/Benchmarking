@@ -1,0 +1,13 @@
+streamlit
+pandas
+numpy
+scikit-learn
+joblib
+pyarrow
+openpyxl
+sqlalchemy
+plotly
+matplotlib
+category_encoders
+category_encoders
+psycopg2-binary

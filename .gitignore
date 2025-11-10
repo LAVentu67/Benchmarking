@@ -1,0 +1,10 @@
+# Entorno virtual
+venv/
+.venv/
+
+# Archivos de datos crudos
+*.xlsx
+
+# Secretos
+.streamlit/secrets.toml
+

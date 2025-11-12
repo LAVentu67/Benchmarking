@@ -248,8 +248,32 @@ with tabs[0]:
             else:
                 segmento_actual = df_grupo['SEGMENTO'].mode().get(0, None)
                 
-                query_segmento = 'SELECT "CLIENTE", "SEGMENTO", "FECHA_DE_PAGO", "CANTIDAD_OFERTADA", "PRECIO_RESERVA", "COSTO_CLIENTE", "PRECIO_DE_MERCADO", "DIAS_HABILES_VENTA", "NUMERO_DE_OFERTAS", "RECUPERACION_PRECIO", "RECUPERACION_VALOR", "MARCA", "MODELO" FROM ventas_historicas WHERE "SEGMENTO" = :segmento'
-                df_segmento_completo = obtener_datos_filtrados(engine, query_segmento, params={'segmento': segmento_actual})
+                # --- MODIFICACIÓN 2: Aplicar filtros de segmentación al query del segmento ---
+                query_segmento = 'SELECT "CLIENTE", "SEGMENTO", "FECHA_DE_PAGO", "CANTIDAD_OFERTADA", "PRECIO_RESERVA", "COSTO_CLIENTE", "PRECIO_DE_MERCADO", "DIAS_HABILES_VENTA", "NUMERO_DE_OFERTAS", "RECUPERACION_PRECIO", "RECUPERACION_VALOR", "MARCA", "MODELO" FROM ventas_historicas WHERE 1=1'
+                params_segmento = {}
+
+                # Aplicar los mismos filtros que el grupo, excepto el cliente
+                filtros_segmento = {
+                    'CLASIFICACION_VENTA': clas_venta_sel, 
+                    'CONDICION_DE_VENTA': condicion_sel,
+                    'CLASIFICACION_MODELO': clas_modelo_sel, 
+                    'ORIGEN_MARCA': origen_marca_sel, 
+                    'COMBUSTIBLE': combustible_sel
+                }
+                
+                for col, val in filtros_segmento.items():
+                    if val != "TODOS":
+                        param_name = f"p_seg_{col.lower()}"
+                        query_segmento += f' AND "{col}" = :{param_name}'
+                        params_segmento[param_name] = val
+                
+                # Añadir el filtro de segmento
+                query_segmento += ' AND "SEGMENTO" = :segmento'
+                params_segmento['segmento'] = segmento_actual
+                
+                df_segmento_completo = obtener_datos_filtrados(engine, query_segmento, params=params_segmento)
+                # --- FIN MODIFICACIÓN 2 ---
+
                 df_segmento_completo['MES_AÑO_PAGO'] = df_segmento_completo['FECHA_DE_PAGO'].dt.to_period('M').dt.to_timestamp()
                 df_segmento_sin_grupo = df_segmento_completo[df_segmento_completo['GRUPO'] != grupo_sel]
 
@@ -525,7 +549,7 @@ with tabs[1]:
                     elif "Días Venta" in indicador or "Ofertas Promedio" in indicador:
                         f_gpo, f_seg = f"{val_gpo:,.0f}", f"{val_seg:,.0f}" 
                     else: # PMV, CMI, PMM, etc.
-                        f_gpo, f_seg = f"$ {val_gpo:,.0f}", f"$ {val_seg:,.0f}"
+                        f_gpo, f_seg = f"$ {val_gpo:,.0f}", f"$ {val_seg:.0f}"
                         
                     html += f"<tr><td>{indicador}</td><td>{f_gpo}</td><td>{f_seg}</td><td><b>{flecha} {delta_val:.1f}%</b></td></tr>"
                 
@@ -554,10 +578,12 @@ with tabs[1]:
                 df_grupo_prom = df_grupo_metrics[df_grupo_metrics['Indicador'].isin(metricas_promedio)].set_index('Indicador')[col_actual]
                 df_segmento_prom = df_segmento_metrics[df_segmento_metrics['Indicador'].isin(metricas_promedio)].set_index('Indicador')[col_actual]
                 
+                # --- MODIFICACIÓN 1: Cambiar 'Grupo' por 'Cliente' ---
                 df_bar_data = pd.DataFrame({
-                    'Grupo': df_grupo_prom,
+                    'Cliente': df_grupo_prom,
                     'Segmento': df_segmento_prom
                 }).reset_index()
+                # --- FIN MODIFICACIÓN 1 ---
 
                 bar_metrics = [m for m in df_grupo_metrics['Indicador'].unique() if m in metricas_promedio]
 
@@ -591,12 +617,14 @@ with tabs[1]:
                     # <--- MODIFICACIÓN 3: FIN (Formatos de Barras) ---
 
                     fig = go.Figure(data=[
+                        # --- MODIFICACIÓN 1: Cambiar 'Grupo' por 'Cliente' ---
                         go.Bar(name=grupo_sel, 
-                            x=['Grupo'], y=[data_bar['Grupo'].iloc[0]], 
+                            x=['Cliente'], y=[data_bar['Cliente'].iloc[0]], 
                             marker_color='#5C1212', 
                             # <--- MODIFICACIÓN 3: Aplicar formato completo ---
-                            text=f'{format_prefix}{data_bar["Cliente"].iloc[0]:{format_spec}}{format_suffix}',
+                         text=f'{format_prefix}{data_bar["Cliente"].iloc[0]:{format_spec}}{format_suffix}',
                             textposition='outside'),
+                        # --- FIN MODIFICACIÓN 1 ---
                         go.Bar(name=f'Segmento ({segmento})', 
                             x=['Segmento'], y=[data_bar['Segmento'].iloc[0]], 
                             marker_color='#C87E7E', 

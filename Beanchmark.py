@@ -133,9 +133,14 @@ st.sidebar.markdown('''
 st.sidebar.divider()
 
 if st.sidebar.button("Borrar Filtros", key="clear_filters"):
-    st.session_state.clear()
-    st.experimental_rerun()
-
+    # Reiniciar filtros a 'TODOS' sin borrar todo el estado
+    st.session_state['grupo_sel'] = 'TODOS'
+    st.session_state['clas_venta_sel'] = 'TODOS'
+    st.session_state['condicion_sel'] = 'TODOS'
+    st.session_state['clas_modelo_sel'] = 'TODOS'
+    st.session_state['origen_marca_sel'] = 'TODOS'
+    st.session_state['combustible_sel'] = 'TODOS'
+    st.rerun()
 
 # --- Filtro de Mes (Solo para Comparativo) ---
 st.sidebar.header("Segmentadores")
@@ -158,7 +163,7 @@ st.sidebar.divider()
 
 
 # <--- MODIFICACIÓN 2: INICIO Lógica de Autenticación ---
-grupo_sel = st.sidebar.selectbox("Grupo", ["TODOS"] + opciones_filtros['clientes'])
+grupo_sel = st.sidebar.selectbox("Cliente", ["TODOS"] + opciones_filtros['clientes'],   key="grupo_sel")
 
 acceso_permitido = False
 
@@ -193,11 +198,11 @@ else:
 # --- <--- MODIFICACIÓN 2: FIN Lógica de Autenticación ---
 
 
-clas_venta_sel = st.sidebar.selectbox("Clasificación de Venta", ["TODOS"] + opciones_filtros['clas_venta'])
-condicion_sel = st.sidebar.selectbox("Condición de Venta", ["TODOS"] + opciones_filtros['condiciones'])
-clas_modelo_sel = st.sidebar.selectbox("Clasificación de Modelo", ["TODOS"] + opciones_filtros['clas_modelo'])
-origen_marca_sel = st.sidebar.selectbox("Marca China", ["TODOS"] + opciones_filtros['origen_marca'])
-combustible_sel = st.sidebar.selectbox("Combustible", ["TODOS"] + opciones_filtros['combustibles'])
+clas_venta_sel = st.sidebar.selectbox("Clasificación de Venta", ["TODOS"] + opciones_filtros['clas_venta'],key="clas_venta_sel")
+condicion_sel = st.sidebar.selectbox("Condición de Venta", ["TODOS"] + opciones_filtros['condiciones'],    key="condicion_sel")
+clas_modelo_sel = st.sidebar.selectbox("Clasificación de Modelo", ["TODOS"] + opciones_filtros['clas_modelo'],  key="clas_modelo_sel")
+origen_marca_sel = st.sidebar.selectbox("Marca China", ["TODOS"] + opciones_filtros['origen_marca'],  key="origen_marca_sel")
+combustible_sel = st.sidebar.selectbox("Combustible", ["TODOS"] + opciones_filtros['combustibles'], key="combustible_sel")
 st.sidebar.divider()
 
 
@@ -290,11 +295,11 @@ with tabs[0]:
                         ))
                         fig.add_trace(go.Scatter(
                             x=df_merge['MES_AÑO_PAGO'], y=df_merge[col_name_g], 
-                            mode='lines', name=f'Grupo: {grupo_sel}', 
+                            mode='lines', name=f'Cliente: {grupo_sel}', 
                             line=dict(color='#5C1212', width=0),
                             fill='tonexty', fillcolor='rgba(92, 18, 18, 0.6)',
                             stackgroup='one',
-                            hovertemplate=f"Mes: %{{x|%Y-%m}}<br><b>Grupo:</b> %{{y{hover_format}}}<extra></extra>",
+                            hovertemplate=f"Mes: %{{x|%Y-%m}}<br><b>Cliente:</b> %{{y{hover_format}}}<extra></extra>",
                         ))
                         
                         df_merge['Total'] = df_merge[col_name_g] + df_merge[col_name_s]
@@ -348,13 +353,13 @@ with tabs[0]:
                         
                         fig.add_trace(go.Scatter(
                             x=df_merge['MES_AÑO_PAGO'], y=df_merge[col_name_g], 
-                            mode='lines+markers+text', name=f'Grupo: {grupo_sel}', 
+                            mode='lines+markers+text', name=f'Cliente: {grupo_sel}', 
                             line=dict(color='#5C1212', width=3),
                             text=[f'{text_prefix}{val:{text_spec}}{text_suffix}' for val in df_merge[col_name_g]], 
                             textfont=dict(size=12, color='black',
                                           family='Roboto, sans-serif'),
                             textposition="top center",
-                            hovertemplate=f"Mes: %{{x|%Y-%m}}<br><b>Grupo:</b> %{{y{hover_format}}}{text_suffix}<extra></extra>",
+                            hovertemplate=f"Mes: %{{x|%Y-%m}}<br><b>Cliente:</b> %{{y{hover_format}}}{text_suffix}<extra></extra>",
                         ))
                         
                         fig.add_trace(go.Scatter(
@@ -487,7 +492,7 @@ with tabs[1]:
                 html += f'<tr><th style="background-color:{color_header};color:white;">Indicador</th><th style="background-color:{color_header};color:white;">{col_anterior}</th><th style="background-color:{color_header};color:white;">{col_actual}</th><th style="background-color:{color_header};color:white;">Δ%</th></tr>'
                 for _, row in df.iterrows():
                     indicador, val_ant, val_act, delta_val = row['Indicador'], row[col_anterior], row[col_actual], row['Δ%']
-                    flecha = ''  # Flechas eliminadas para Grupo vs Segmento (2025)
+                    flecha = ''  # Flechas eliminadas para Cliente vs Segmento (2025)
                     
                     if indicador == "Unidades": f_ant, f_act = f"{val_ant:,.0f}", f"{val_act:,.0f}"
                     elif "%Rec" in indicador: f_ant, f_act = f"{val_ant:.1f}%", f"{val_act:.1f}%"
@@ -500,7 +505,7 @@ with tabs[1]:
                 return html
 
             def generar_tabla_delta(df, titulo, color_header="#6c757d"):
-                """Genera una tabla HTML para comparar Grupo vs Segmento."""
+                """Genera una tabla HTML para comparar Cliente vs Segmento."""
                 html = f'<h4 style="text-align:center; color:{color_header};">{titulo}</h4>'
                 html += '<table style="width:100%; border-collapse: collapse; text-align: center;">'
                 html += f'<tr><th style="background-color:{color_header};color:white;">Indicador</th>'
@@ -510,7 +515,7 @@ with tabs[1]:
                 
                 for _, row in df.iterrows():
                     indicador, val_gpo, val_seg, delta_val = row['Indicador'], row['Valor_Grupo'], row['Valor_Segmento'], row['Delta %']
-                    flecha = ''  # Flechas eliminadas para Grupo vs Segmento (2025)
+                    flecha = ''  # Flechas eliminadas para Cliente vs Segmento (2025)
                     
                     if indicador == "Unidades":
                         f_gpo, f_seg = f"{val_gpo:,.0f}", f"{val_seg:,.0f}"
@@ -590,7 +595,7 @@ with tabs[1]:
                             x=['Grupo'], y=[data_bar['Grupo'].iloc[0]], 
                             marker_color='#5C1212', 
                             # <--- MODIFICACIÓN 3: Aplicar formato completo ---
-                            text=f'{format_prefix}{data_bar["Grupo"].iloc[0]:{format_spec}}{format_suffix}',
+                            text=f'{format_prefix}{data_bar["Cliente"].iloc[0]:{format_spec}}{format_suffix}',
                             textposition='outside'),
                         go.Bar(name=f'Segmento ({segmento})', 
                             x=['Segmento'], y=[data_bar['Segmento'].iloc[0]], 
@@ -621,7 +626,7 @@ with tabs[1]:
                 tabla_segmento_anual = calcular_metricas(df_segmento_actual, df_segmento_anterior_anual, col_actual_anual, col_anterior_anual)
                 
                 t1, t2 = st.columns(2)
-                t1.markdown(generar_tabla_html(tabla_grupo_anual, f"Grupo: {grupo_sel}", "#5C1212", col_anterior_anual, col_actual_anual), unsafe_allow_html=True)
+                t1.markdown(generar_tabla_html(tabla_grupo_anual, f"Cliente: {grupo_sel}", "#5C1212", col_anterior_anual, col_actual_anual), unsafe_allow_html=True)
                 t2.markdown(generar_tabla_html(tabla_segmento_anual, f"Segmento (Sin Grupo): {segmento}", "#C87E7E", col_anterior_anual, col_actual_anual), unsafe_allow_html=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -635,7 +640,7 @@ with tabs[1]:
                     df_delta_anual['Valor_Grupo'] = tabla_grupo_anual[col_actual_anual]
                     df_delta_anual['Valor_Segmento'] = tabla_segmento_anual[col_actual_anual]
                     df_delta_anual['Delta %'] = df_delta_anual.apply(lambda row: (row['Valor_Grupo'] / row['Valor_Segmento'] * 100) if row['Valor_Segmento'] != 0 else 0, axis=1)
-                    st.markdown(generar_tabla_delta(df_delta_anual, f"Grupo vs Segmento ({año_actual})"), unsafe_allow_html=True)
+                    st.markdown(generar_tabla_delta(df_delta_anual, f"Cliente vs Segmento ({año_actual})"), unsafe_allow_html=True)
 
                 with t_pie:
                     # --- Lógica del pastel "Unidades" movida aquí ---
@@ -683,7 +688,7 @@ with tabs[1]:
                 tabla_segmento_mensual = calcular_metricas(df_segmento_actual, df_segmento_anterior_mensual, col_actual_mensual, col_anterior_mensual)
 
                 t3, t4 = st.columns(2)
-                t3.markdown(generar_tabla_html(tabla_grupo_mensual, f"Grupo: {grupo_sel}", "#5C1212", col_anterior_mensual, col_actual_mensual), unsafe_allow_html=True)
+                t3.markdown(generar_tabla_html(tabla_grupo_mensual, f"Cliente: {grupo_sel}", "#5C1212", col_anterior_mensual, col_actual_mensual), unsafe_allow_html=True)
                 t4.markdown(generar_tabla_html(tabla_segmento_mensual, f"Segmento (Sin Grupo): {segmento}", "#C87E7E", col_anterior_mensual, col_actual_mensual), unsafe_allow_html=True)
                 
                 # <--- MODIFICACIÓN 1: Tabla Delta Mensual eliminada ---
@@ -705,7 +710,7 @@ with tabs[1]:
                     ))
                     fig.add_trace(go.Scatter(
                         x=df_grupo[x_col], y=df_grupo[y_col],
-                        mode='markers', name=f'Grupo: {grupo_sel}', 
+                        mode='markers', name=f'Cliente: {grupo_sel}', 
                         marker=dict(color='#5C1212', opacity=0.8, line=dict(width=1, color='Black')),
                         hovertemplate=f"<b>Grupo</b><br>{x_label}: %{{x:$,.0f}}<br>{y_label}: %{{y:$,.0f}}<extra></extra>"
                     ))
@@ -783,7 +788,7 @@ with tabs[1]:
 
                 tree_col1, tree_col2 = st.columns(2)
                 with tree_col1:
-                    crear_grafico_jerarquia(df_grupo_actual, f"Grupo: {grupo_sel}", 'tree_grupo')
+                    crear_grafico_jerarquia(df_grupo_actual, f"Cliente: {grupo_sel}", 'tree_grupo')
                 with tree_col2:
                     crear_grafico_jerarquia(df_segmento_actual, f"Segmento: {segmento}", 'tree_segmento')
 

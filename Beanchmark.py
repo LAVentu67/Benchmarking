@@ -473,7 +473,7 @@ with tabs[1]:
                 with disp_col2: crear_grafico_dispersion(df_grupo_actual, df_segmento_actual, 'PRECIO_DE_MERCADO', 'CANTIDAD_OFERTADA', 'Valor de Mercado', 'Precio de Venta', 'scatter_mercado')
 
                 st.markdown("---")
-                st.markdown("####  Marcas y Modelos")
+                st.markdown("#### Marcas y Modelos")
                 def crear_grafico_jerarquia(df, titulo, key, color_scale='Reds', base_color='#5C1212'):
                     if df.empty or 'MARCA' not in df.columns or 'MODELO' not in df.columns:
                         st.warning(f"No hay datos de Marca/Modelo para el gráfico: {titulo}")
@@ -613,14 +613,34 @@ with tabs[2]:
             df_metrics['Cliente'] = [anonymize(row, i) for i, row in df_metrics.iterrows()]
             
             # --- SECCIÓN SUPERIOR: Checkbox y Tabla (SOLICITUD #1) ---
-            ver_unidades = st.checkbox("Mostrar Unidades", value=True)
             
-            cols_display = ['Cliente', 'Unidades', 'PMV', 'CMI', 'PMM', 'Precio Reserva Promedio', 
-                            'Días Venta Promedio', 'Ofertas Promedio', '%Rec CMI', '%Rec EBC', '%Rec CC/EBC']
+            # --- INICIO CAMBIOS SOLICITADOS ---
+            checkbox_cols = st.columns(3)
+            with checkbox_cols[0]:
+                ver_unidades = st.checkbox("Mostrar Unidades", value=True)
+            with checkbox_cols[1]:
+                ver_precio_reserva = st.checkbox("Mostrar Precio Reserva", value=True)
+            with checkbox_cols[2]:
+                ver_rec_cc_ebc = st.checkbox("Mostrar %Rec CC/EBC", value=True)
+            # --- FIN CAMBIOS SOLICITADOS ---
             
-            if not ver_unidades:
-                cols_display.remove('Unidades')
-            
+            # Definición de las columnas base para la tabla
+            cols_base = ['Cliente', 'PMV', 'CMI', 'PMM', 'Días Venta Promedio', 'Ofertas Promedio', '%Rec CMI', '%Rec EBC']
+            cols_display = cols_base[:]
+
+            # Inserción condicional de columnas basado en los checkboxes
+            if ver_unidades:
+                cols_display.insert(1, 'Unidades')
+            if ver_precio_reserva:
+                # Insertar después de PMM
+                try:
+                    p_index = cols_display.index('PMM')
+                    cols_display.insert(p_index + 1, 'Precio Reserva Promedio')
+                except ValueError:
+                    cols_display.append('Precio Reserva Promedio')
+            if ver_rec_cc_ebc:
+                cols_display.append('%Rec CC/EBC')
+                
             df_display = df_metrics[cols_display].copy()
 
             st.markdown(f"##### Ranking Desempeño: {segmento_target} - {mes_nombre} {año_actual}")
@@ -628,7 +648,7 @@ with tabs[2]:
             html = '<table style="width:100%; border-collapse: collapse; text-align: center; font-size: 0.9em;">'
             html += '<tr style="background-color: #6c757d; color: white;">'
             for h in cols_display:
-                h_clean = h.replace(" Promedio", "")
+                h_clean = h.replace(" Promedio", "").replace("%Rec CC/EBC", "Rec CC/EBC") # Ajustar títulos para la tabla
                 html += f'<th style="padding: 10px; border: 1px solid #ddd;">{h_clean}</th>'
             html += '</tr>'
             

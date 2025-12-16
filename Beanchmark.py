@@ -188,7 +188,7 @@ else:
 
 clas_venta_sel = st.sidebar.selectbox("Clasificación de Venta", ["TODOS"] + opciones_filtros['clas_venta'],key="clas_venta_sel")
 condicion_sel = st.sidebar.selectbox("Condición de Venta", ["TODOS"] + opciones_filtros['condiciones'],    key="condicion_sel")
-clas_modelo_sel = st.sidebar.selectbox("Clasificación de Modelo", ["TODOS"] + opciones_filtros['clas_modelo'],  key="clas_modelo_sel")
+clas_modelo_sel = st.sidebar.selectbox("Tipo de unidad", ["TODOS"] + opciones_filtros['clas_modelo'],  key="clas_modelo_sel")
 origen_marca_sel = st.sidebar.selectbox("Marca China", ["TODOS"] + opciones_filtros['origen_marca'],  key="origen_marca_sel")
 combustible_sel = st.sidebar.selectbox("Combustible", ["TODOS"] + opciones_filtros['combustibles'], key="combustible_sel")
 st.sidebar.divider()

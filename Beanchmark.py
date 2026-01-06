@@ -42,6 +42,7 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--app-bg-color);
 [data-testid="stSidebar"] h2, [data-testid="stSidebar"] label { color: var(--white); }
 [data-testid="stSidebar"] [data-testid="stImage"] { background-color: var(--white); padding: 10px; border-radius: 10px; margin-bottom: 20px; }
 [data-testid="stSidebar"] .stSelectbox > div, [data-testid="stSidebar"] .stMultiSelect > div { background-color: #343a3a; color: var(--white); }
+[data-testid="stSidebar"] .stMultiSelect span { color: var(--white); } 
 .stButton > button { background-color: var(--primary-color); color: white; border-radius: 6px; border: none; width: 100%; font-weight: 700; padding: 8px 0; }
 .stButton > button:hover { background-color: #4a0f0f; }
 
@@ -131,11 +132,11 @@ st.sidebar.divider()
 
 if st.sidebar.button("Borrar Filtros", key="clear_filters"):
     st.session_state['grupo_sel'] = 'TODOS'
-    st.session_state['clas_venta_sel'] = 'TODOS'
-    st.session_state['condicion_sel'] = 'TODOS'
-    st.session_state['clas_modelo_sel'] = 'TODOS'
-    st.session_state['origen_marca_sel'] = 'TODOS'
-    st.session_state['combustible_sel'] = 'TODOS'
+    st.session_state['clas_venta_sel'] = ['TODOS']
+    st.session_state['condicion_sel'] = ['TODOS']
+    st.session_state['clas_modelo_sel'] = ['TODOS']
+    st.session_state['origen_marca_sel'] = ['TODOS']
+    st.session_state['combustible_sel'] = ['TODOS']
     st.rerun()
 
 # --- Filtro de Mes y Año ---
@@ -159,6 +160,7 @@ mes_num = next((k for k, v in meses_dict.items() if v == mes_nombre), None)
 st.sidebar.divider()
 
 # --- Filtros Generales ---
+# Nota: Cliente se mantiene como Selectbox individual por lógica de autenticación
 grupo_sel = st.sidebar.selectbox("Cliente", ["TODOS"] + opciones_filtros['clientes'],   key="grupo_sel")
 
 acceso_permitido = False
@@ -190,11 +192,12 @@ else:
                 st.sidebar.error(f"Error al leer los códigos de acceso: {e}")
                 st.session_state.cliente_autenticado = None
 
-clas_venta_sel = st.sidebar.selectbox("Clasificación de Venta", ["TODOS"] + opciones_filtros['clas_venta'],key="clas_venta_sel")
-condicion_sel = st.sidebar.selectbox("Condición de Venta", ["TODOS"] + opciones_filtros['condiciones'],    key="condicion_sel")
-clas_modelo_sel = st.sidebar.selectbox("Tipo de unidad", ["TODOS"] + opciones_filtros['clas_modelo'],  key="clas_modelo_sel")
-origen_marca_sel = st.sidebar.selectbox("Marca China", ["TODOS"] + opciones_filtros['origen_marca'],  key="origen_marca_sel")
-combustible_sel = st.sidebar.selectbox("Combustible", ["TODOS"] + opciones_filtros['combustibles'], key="combustible_sel")
+# Modificados a multiselect
+clas_venta_sel = st.sidebar.multiselect("Clasificación de Venta", ["TODOS"] + opciones_filtros['clas_venta'], default=["TODOS"], key="clas_venta_sel")
+condicion_sel = st.sidebar.multiselect("Condición de Venta", ["TODOS"] + opciones_filtros['condiciones'], default=["TODOS"], key="condicion_sel")
+clas_modelo_sel = st.sidebar.multiselect("Tipo de unidad", ["TODOS"] + opciones_filtros['clas_modelo'], default=["TODOS"], key="clas_modelo_sel")
+origen_marca_sel = st.sidebar.multiselect("Marca China", ["TODOS"] + opciones_filtros['origen_marca'], default=["TODOS"], key="origen_marca_sel")
+combustible_sel = st.sidebar.multiselect("Combustible", ["TODOS"] + opciones_filtros['combustibles'], default=["TODOS"], key="combustible_sel")
 st.sidebar.divider()
 
 run_evolucion = st.sidebar.button("Analizar Evolución", disabled=(not acceso_permitido))
@@ -213,8 +216,13 @@ with tabs[0]:
             filtros = {'CLIENTE': grupo_sel, 'CLASIFICACION_VENTA': clas_venta_sel, 'CONDICION_DE_VENTA': condicion_sel, 'CLASIFICACION_MODELO': clas_modelo_sel, 'ORIGEN_MARCA': origen_marca_sel, 'COMBUSTIBLE': combustible_sel}
 
             for col, val in filtros.items():
-                if val != "TODOS":
-                    param_name = f"p_{col.lower()}"
+                param_name = f"p_{col.lower()}"
+                # Lógica para manejar lista (multiselect) o string (selectbox/TODOS)
+                if isinstance(val, list):
+                    if "TODOS" not in val and len(val) > 0:
+                        query_base += f' AND "{col}" IN :{param_name}'
+                        params[param_name] = tuple(val)
+                elif val != "TODOS":
                     query_base += f' AND "{col}" = :{param_name}'
                     params[param_name] = val
             
@@ -230,8 +238,12 @@ with tabs[0]:
                 filtros_segmento = {'CLASIFICACION_VENTA': clas_venta_sel, 'CONDICION_DE_VENTA': condicion_sel, 'CLASIFICACION_MODELO': clas_modelo_sel, 'ORIGEN_MARCA': origen_marca_sel, 'COMBUSTIBLE': combustible_sel}
                 
                 for col, val in filtros_segmento.items():
-                    if val != "TODOS":
-                        param_name = f"p_seg_{col.lower()}"
+                    param_name = f"p_seg_{col.lower()}"
+                    if isinstance(val, list):
+                        if "TODOS" not in val and len(val) > 0:
+                            query_segmento += f' AND "{col}" IN :{param_name}'
+                            params_segmento[param_name] = tuple(val)
+                    elif val != "TODOS":
                         query_segmento += f' AND "{col}" = :{param_name}'
                         params_segmento[param_name] = val
                 
@@ -313,8 +325,12 @@ with tabs[1]:
         filtros_comp = {'CLASIFICACION_VENTA': clas_venta_sel, 'CONDICION_DE_VENTA': condicion_sel, 'CLASIFICACION_MODELO': clas_modelo_sel, 'ORIGEN_MARCA': origen_marca_sel, 'COMBUSTIBLE': combustible_sel}
 
         for col, val in filtros_comp.items():
-            if val != "TODOS":
-                param_name = f"p_comp_{col.lower()}"
+            param_name = f"p_comp_{col.lower()}"
+            if isinstance(val, list):
+                if "TODOS" not in val and len(val) > 0:
+                    query_comp += f' AND "{col}" IN :{param_name}'
+                    params_comp[param_name] = tuple(val)
+            elif val != "TODOS":
                 query_comp += f' AND "{col}" = :{param_name}'
                 params_comp[param_name] = val
         
@@ -525,8 +541,12 @@ with tabs[2]:
         
         filtros_check = {'CLASIFICACION_VENTA': clas_venta_sel, 'CONDICION_DE_VENTA': condicion_sel, 'CLASIFICACION_MODELO': clas_modelo_sel, 'ORIGEN_MARCA': origen_marca_sel, 'COMBUSTIBLE': combustible_sel}
         for col, val in filtros_check.items():
-            if val != "TODOS":
-                param_name = f"p_segcheck_{col.lower()}"
+            param_name = f"p_segcheck_{col.lower()}"
+            if isinstance(val, list):
+                if "TODOS" not in val and len(val) > 0:
+                    query_check_seg += f' AND "{col}" IN :{param_name}'
+                    params_seg_check[param_name] = tuple(val)
+            elif val != "TODOS":
                 query_check_seg += f' AND "{col}" = :{param_name}'
                 params_seg_check[param_name] = val
         
@@ -557,8 +577,12 @@ with tabs[2]:
         
         filtros_perf = {'CLASIFICACION_VENTA': clas_venta_sel, 'CONDICION_DE_VENTA': condicion_sel, 'CLASIFICACION_MODELO': clas_modelo_sel, 'ORIGEN_MARCA': origen_marca_sel, 'COMBUSTIBLE': combustible_sel}
         for col, val in filtros_perf.items():
-            if val != "TODOS":
-                param_name = f"p_perf_{col.lower()}"
+            param_name = f"p_perf_{col.lower()}"
+            if isinstance(val, list):
+                if "TODOS" not in val and len(val) > 0:
+                    query_perf += f' AND "{col}" IN :{param_name}'
+                    params_perf[param_name] = tuple(val)
+            elif val != "TODOS":
                 query_perf += f' AND "{col}" = :{param_name}'
                 params_perf[param_name] = val
 

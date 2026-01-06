@@ -138,13 +138,17 @@ if st.sidebar.button("Borrar Filtros", key="clear_filters"):
     st.session_state['combustible_sel'] = 'TODOS'
     st.rerun()
 
-# --- Filtro de Mes ---
+# --- Filtro de Mes y Año ---
 st.sidebar.header("Segmentadores")
+
+# NUEVO FILTRO DE AÑO AGREGADO
+año_actual = st.sidebar.selectbox("Selecciona Año", [2026, 2025, 2024, 2023], index=1)
+
 meses_dict = {
     1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio",
     7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
 }
-año_actual = pd.Timestamp.today().year
+# Se mantiene la lógica del mes actual para el index predeterminado
 mes_actual_num = pd.Timestamp.today().month
 mes_nombre = st.sidebar.selectbox(
     "Selecciona Mes (Comparativo/Desempeño)", 
@@ -612,9 +616,8 @@ with tabs[2]:
 
             df_metrics['Cliente'] = [anonymize(row, i) for i, row in df_metrics.iterrows()]
             
-            # --- SECCIÓN SUPERIOR: Checkbox y Tabla (SOLICITUD #1) ---
+            # --- SECCIÓN SUPERIOR: Checkbox y Tabla ---
             
-            # --- INICIO CAMBIOS SOLICITADOS ---
             checkbox_cols = st.columns(3)
             with checkbox_cols[0]:
                 ver_unidades = st.checkbox("Mostrar Unidades", value=True)
@@ -622,7 +625,6 @@ with tabs[2]:
                 ver_precio_reserva = st.checkbox("Mostrar Precio Reserva", value=True)
             with checkbox_cols[2]:
                 ver_rec_cc_ebc = st.checkbox("Mostrar %Rec CC/EBC", value=True)
-            # --- FIN CAMBIOS SOLICITADOS ---
             
             # Definición de las columnas base para la tabla
             cols_base = ['Cliente', 'PMV', 'CMI', 'PMM', 'Días Venta Promedio', 'Ofertas Promedio', '%Rec CMI', '%Rec EBC']
@@ -677,12 +679,10 @@ with tabs[2]:
             st.markdown(html, unsafe_allow_html=True)
             st.caption(f"* Comparativa del segmento '{segmento_target}'.")
 
-            # --- SECCIÓN GRÁFICOS (SOLICITUD #3: Tabs y Ejes Compartidos) ---
+            # --- SECCIÓN GRÁFICOS ---
             st.markdown("<hr>", unsafe_allow_html=True)
             st.markdown("### Comparativo de Indicadores")
             
-            # (SOLICITUD #4: Se quitó gráfica pastel)
-
             tabs_graf = st.tabs(["Precio", "Costo", "Valor"])
             
             # Función auxiliar para generar gráfico de eje compartido
